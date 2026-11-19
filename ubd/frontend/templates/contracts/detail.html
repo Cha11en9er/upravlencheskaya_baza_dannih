@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Договор {{ contract.number }} — УБД{% endblock %}
+{% block crumbs %}<a href="/contracts">Договоры</a> → {{ contract.number }}{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1 style="margin:0">{{ contract.contract_type }} № {{ contract.number }} от {{ contract.date | dt }}</h1>
+  <div class="spacer"></div>
+  {% if access_level(user, 'contracts') == 'edit' %}
+    <a class="btn btn-sm" data-modal="/contracts/{{ contract.id }}/edit">✏️ Редактировать</a>
+    {% if contract.status != 'Аннулирован' %}
+    <form method="post" action="/contracts/{{ contract.id }}/status" style="display:inline">
+      <input type="hidden" name="status" value="Аннулирован">
+      <button class="btn btn-danger btn-sm">🚫 Аннулировать</button>
+    </form>
+    {% else %}
+    <form method="post" action="/contracts/{{ contract.id }}/status" style="display:inline">
+      <input type="hidden" name="status" value="Проект">
+      <button class="btn btn-sm">♻️ Восстановить</button>
+    </form>
+    {% endif %}
+    {% if user.role == 'Администратор' %}
+    <form method="post" action="/contracts/{{ contract.id }}/delete" style="display:inline"
+          onsubmit="return confirm('Удалить договор? Возможно только для пустых строк.')">
+      <button class="btn btn-danger btn-sm">🗑️ Удалить</button>
+    </form>
+    {% endif %}
+  {% endif %}
+</div>
+
+<div class="form-grid" style="background:#fff;padding:14px;border-radius:8px;margin-bottom:16px">
+  <div><span class="muted">Статус:</span> <b>{{ contract.status }}</b></div>
+  <div><span class="muted">Сумма:</span> <b>₽ {{ contract.amount | money }}</b></div>
+  <div><span class="muted">Аванс:</span> {{ contract.advance_pct }}% (₽ {{ contract.advance_sum | money }})</div>
+  <div><span class="muted">Оплачено:</span> ₽ {{ contract.paid | money }}</div>
+  <div><span class="muted">Остаток:</span> ₽ {{ contract.rest | money }}</div>
+  <div><span class="muted">Просрочка:</span> {{ contract.overdue_days }} дн., пени ₽ {{ contract.penalty | money }} {{ m.risk_badge(contract.risk) }}</div>
+  <div><span class="muted">Срок:</span> {{ contract.date_start | dt }} — {{ contract.date_end | dt }}</div>
+  {% if contract.note %}<div><span class="muted">Примечание:</span> {{ contract.note }}</div>{% endif %}
+</div>
+
+<h2>Дополнительные соглашения</h2>
+{% if access_level(user, 'contracts') == 'edit' %}
+<form method="post" action="/contracts/{{ contract.id }}/amendments" class="filters">
+  <label>№ ДС <input name="number" required></label>
+  <label>Дата <input type="date" name="date"></label>
+  <label>Новая сумма, ₽ <input type="number" name="new_amount" step="1"></label>
+  <label>Новая дата оконч. <input type="date" name="new_date_end"></label>
+  <label>Статус
+    <select name="status">{% for s in amendment_statuses %}<option value="{{ s }}">{{ s }}</option>{% endfor %}</select>
+  </label>
+  <label>Причина <input name="reason"></label>
+  <button class="btn btn-primary">📑 Добавить ДС</button>
+</form>
+{% endif %}
+<table class="data">
+  <thead><tr><th>№ ДС</th><th>Дата</th><th class="num">Новая сумма</th><th>Новая дата оконч.</th><th>Статус</th><th>Причина</th><th></th></tr></thead>
+  <tbody>
+  {% for a in contract.amendments %}
+    <tr>
+      <td>{{ a.number }}</td><td>{{ a.date | dt }}</td><td class="num">{{ a.new_amount | money }}</td>
+      <td>{{ a.new_date_end | dt }}</td><td>{{ a.status }}</td><td>{{ a.reason }}</td>
+      <td>
+        {% if access_level(user, 'contracts') == 'edit' %}
+          {% if a.status != 'Подписан' %}
+          <form method="post" action="/contracts/amendments/{{ a.id }}/status" style="display:inline">
+            <input type="hidden" name="status" value="Подписан">
+            <button class="btn btn-sm btn-primary">✅ Подписать</button>
+          </form>
+          {% endif %}
+          {% if a.status != 'Аннулирован' %}
+          <form method="post" action="/contracts/amendments/{{ a.id }}/status" style="display:inline">
+            <input type="hidden" name="status" value="Аннулирован">
+            <button class="btn btn-sm">🚫</button>
+          </form>
+          {% endif %}
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="muted">ДС нет</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Оплаты по договору</h2>
+{% if access_level(user, 'payments') == 'edit' %}
+<div class="toolbar">
+  <a class="btn btn-primary" data-modal="/payments/new?contract_id={{ contract.id }}">➕ Добавить оплату</a>
+</div>
+{% endif %}
+<table class="data">
+  <thead><tr><th>Тип</th><th>Этап</th><th>План. дата</th><th>Факт. дата</th><th class="num">План. сумма</th><th class="num">Факт. сумма</th><th>Статус</th><th class="num">Просрочка</th><th>Риск</th></tr></thead>
+  <tbody>
+  {% for p in payments %}
+    <tr>
+      <td>{{ p.kind }}</td><td>{{ p.stage_type }} {{ p.stage_label }}</td>
+      <td>{{ p.plan_date | dt }}</td><td>{{ p.fact_date | dt }}</td>
+      <td class="num">{{ p.plan_sum | money }}</td><td class="num">{{ p.fact_sum | money }}</td>
+      <td>{{ p.status }}</td><td class="num">{{ p.overdue_days }}</td>
+      <td>{{ m.risk_badge(p.risk) }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="9" class="muted">Оплат нет</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

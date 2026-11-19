@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Договоры — УБД{% endblock %}
+{% block crumbs %}Договоры и Оплаты → Договоры{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1 style="margin:0">Договоры (ГП/СП)</h1>
+  <div class="spacer"></div>
+  {% if access_level(user, 'contracts') == 'edit' %}
+    <a class="btn btn-primary" data-modal="/contracts/new">➕ Добавить договор</a>
+  {% endif %}
+  <a class="btn" href="/contracts/export.xlsx?{{ request.url.query | replace('page=', 'x=') }}">📥 Экспорт XLSX</a>
+</div>
+
+<form class="filters" method="get" action="/contracts">
+  <label>Проект
+    <select name="project_id">
+      <option value="0">Все</option>
+      {% for p in projects %}<option value="{{ p.id }}" {{ 'selected' if f_project_id == p.id }}>{{ p.code }} — {{ p.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Статус
+    <select name="status">
+      <option value="">Все</option>
+      {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if f_status == s }}>{{ s }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Тип
+    <select name="ctype">
+      <option value="">Все</option>
+      {% for t in contract_types %}<option value="{{ t }}" {{ 'selected' if f_ctype == t }}>{{ t }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Поиск № / примечание
+    <input type="text" name="q" value="{{ f_q }}">
+  </label>
+  <button class="btn btn-primary" type="submit">Показать</button>
+</form>
+
+<table class="data">
+  <thead><tr>
+    <th>Тип</th><th>ID ГП</th><th>№ договора</th><th>Дата</th><th>Проект</th><th>Контрагент</th>
+    <th>Предмет</th><th class="num">Сумма</th><th class="num">Оплачено</th><th class="num">Остаток</th>
+    <th>Дата оконч.</th><th>Статус</th><th class="num">Просрочка</th><th class="num">Пени</th><th>Риск</th>
+    <th>ДС</th><th></th>
+  </tr></thead>
+  <tbody>
+    {% for c in items %}
+    <tr>
+      <td>{{ c.contract_type }}</td>
+      <td>{{ c.parent_id or '' }}</td>
+      <td><a href="/contracts/{{ c.id }}">{{ c.number }}</a></td>
+      <td>{{ c.date | dt }}</td>
+      <td>{{ c.project_id or '' }}</td>
+      <td>{{ c.contractor.name if c.contractor }}</td>
+      <td>{{ c.subject }}</td>
+      <td class="num">{{ c.amount | money }}</td>
+      <td class="num">{{ c.paid | money }}</td>
+      <td class="num">{{ c.rest | money }}</td>
+      <td>{{ c.date_end | dt }}</td>
+      <td>{{ c.status }}</td>
+      <td class="num {{ 'red' if c.overdue_days > 5 else ('yellow' if c.overdue_days else '') }}">{{ c.overdue_days }}</td>
+      <td class="num">{{ c.penalty | money }}</td>
+      <td>{{ m.risk_badge(c.risk) }}</td>
+      <td class="num">{{ c.amendments | length }}</td>
+      <td>
+        {% if access_level(user, 'contracts') == 'edit' %}
+          <a class="btn btn-sm" data-modal="/contracts/{{ c.id }}/edit">✏️</a>
+        {% endif %}
+        <a class="btn btn-sm" href="/contracts/{{ c.id }}">📄</a>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="17" class="muted">Нет договоров по фильтру</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{{ m.pager('/contracts', page, pages, 'project_id=' ~ f_project_id ~ '&status=' ~ f_status ~ '&ctype=' ~ f_ctype ~ '&q=' ~ f_q) }}
+{% endblock %}

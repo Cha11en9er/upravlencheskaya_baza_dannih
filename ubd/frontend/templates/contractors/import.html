@@ -1,0 +1,20 @@
+{% set partial = request.query_params.get('partial') == '1' %}
+{% set layout = 'base_partial.html' if partial else 'base.html' %}
+{% extends layout %}
+{% block title %}Импорт контрагентов — УБД{% endblock %}
+{% block content %}
+<h1>Импорт контрагентов из Excel</h1>
+<p>Загрузите выгрузку базы компаний (например, <i>девелоперы_генподрядчики_синапс.xlsx</i>).
+Строки сопоставляются по ИНН: существующие карточки дополняются пустыми полями, новых — создаём.
+Пустые ИНН создают новых контрагентов без сопоставления.</p>
+<form method="post" action="/contractors/import" enctype="multipart/form-data">
+  <label class="f-field">
+    <span class="f-label">Файл .xlsx</span>
+    <input type="file" name="file" accept=".xlsx" required>
+  </label>
+  <div class="toolbar">
+    <button type="submit" class="btn btn-primary">📤 Импортировать</button>
+    <button type="button" class="btn" data-close-modal>Отмена</button>
+  </div>
+</form>
+{% endblock %}

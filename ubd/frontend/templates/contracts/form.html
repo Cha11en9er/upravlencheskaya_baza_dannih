@@ -1,0 +1,50 @@
+{% set partial = request.query_params.get('partial') == '1' %}
+{% set layout = 'base_partial.html' if partial else 'base.html' %}
+{% extends layout %}
+{% import "_macros.html" as m %}
+{% block title %}{{ 'Редактирование договора' if contract else 'Новый договор' }} — УБД{% endblock %}
+{% block content %}
+<div id="modal-body-wrapper">
+<h1>{{ 'Редактирование договора №' ~ contract.number if contract else 'Новый договор' }}</h1>
+<form method="post" action="{{ '/contracts/' ~ contract.id ~ '/edit' if contract else '/contracts/new' }}">
+  <div class="form-grid">
+    {{ m.select('Тип', 'contract_type', contract_types, contract.contract_type if contract else 'ГП') }}
+    {{ m.select('ID ГП (для СП)', 'parent_id', gp_contracts, contract.parent_id if contract else '', title_key='number') }}
+    {{ m.select('Заказчик', 'customer_id', contractors, contract.customer_id if contract else '') }}
+    {{ m.select('Генподрядчик', 'gencontractor_id', contractors, contract.gencontractor_id if contract else '') }}
+    {{ m.select('Подрядчик', 'subcontractor_id', contractors, contract.subcontractor_id if contract else '') }}
+    {{ m.select('Контрагент', 'contractor_id', contractors, contract.contractor_id if contract else '') }}
+    {{ m.field('№ договора', 'number', contract.number if contract else '', required=True) }}
+    {{ m.field('Дата', 'date', contract.date if contract else '', type='date') }}
+    {{ m.select('Проект', 'project_id', projects, contract.project_id if contract else '', title_key='code') }}
+    {{ m.select('Объект', 'object_id', objects, contract.object_id if contract else '', extra_attr='data-project-of="project_id"') }}
+    {{ m.select('Предмет', 'subject', subjects, contract.subject if contract else 'СМР', empty='') }}
+    {{ m.select('Раздел РД', 'rd_section', rd_sections, contract.rd_section if contract else '', empty='') }}
+    {{ m.field('Сумма, ₽', 'amount', contract.amount if contract else 0, type='number', step='1') }}
+    {{ m.field('Аванс %', 'advance_pct', contract.advance_pct if contract else 0, type='number', step='1') }}
+    {{ m.field('Дата начала', 'date_start', contract.date_start if contract else '', type='date') }}
+    {{ m.field('Дата оконч.', 'date_end', contract.date_end if contract else '', type='date') }}
+    {{ m.select('Статус', 'status', statuses, contract.status if contract else 'Проект', empty='') }}
+    {{ m.field('Ссылка', 'link', contract.link if contract else '', placeholder='https://...') }}
+  </div>
+  <div>
+    {{ m.checkbox('Шаблон', 'has_template', contract.has_template if contract else False) }}
+    {{ m.checkbox('ИРД', 'has_ird', contract.has_ird if contract else False) }}
+    {{ m.checkbox('ТЗ', 'has_tz', contract.has_tz if contract else False) }}
+    {{ m.checkbox('ГФ', 'has_gf', contract.has_gf if contract else False) }}
+    {{ m.checkbox('ГПР', 'has_gpr', contract.has_gpr if contract else False) }}
+    {{ m.checkbox('Смета', 'has_estimate', contract.has_estimate if contract else False) }}
+    {{ m.checkbox('РД ВПР', 'has_rd_vpr', contract.has_rd_vpr if contract else False) }}
+  </div>
+  <label class="f-field">
+    <span class="f-label">Примечание</span>
+    <textarea name="note" rows="2">{{ contract.note if contract }}</textarea>
+  </label>
+  <div class="toolbar">
+    <button type="submit" class="btn btn-primary">💾 Сохранить и обновить</button>
+    <button type="button" class="btn" data-close-modal>Отмена</button>
+    <a class="btn" href="/contracts">К списку</a>
+  </div>
+</form>
+</div>
+{% endblock %}

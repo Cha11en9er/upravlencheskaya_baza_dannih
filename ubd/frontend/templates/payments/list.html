@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Оплаты — УБД{% endblock %}
+{% block crumbs %}Оплаты{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1 style="margin:0">Оплаты</h1>
+  <div class="spacer"></div>
+  {% if access_level(user, 'payments') == 'edit' %}
+    <a class="btn btn-primary" data-modal="/payments/new">➕ Добавить оплату</a>
+  {% endif %}
+  <a class="btn" href="/payments/export.xlsx">📥 Экспорт XLSX</a>
+</div>
+
+<form class="filters" method="get" action="/payments">
+  <label>Договор
+    <select name="contract_id">
+      <option value="0">Все</option>
+      {% for c in contracts %}<option value="{{ c.id }}" {{ 'selected' if f_contract_id == c.id }}>{{ c.number }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Тип
+    <select name="kind">
+      <option value="">Все</option>
+      {% for k in kinds %}<option value="{{ k }}" {{ 'selected' if f_kind == k }}>{{ k }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Статус
+    <select name="status">
+      <option value="">Все</option>
+      {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if f_status == s }}>{{ s }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Поиск (этап/примечание)
+    <input type="text" name="q" value="{{ f_q }}">
+  </label>
+  <button class="btn btn-primary" type="submit">Показать</button>
+</form>
+
+<table class="data">
+  <thead><tr><th>Дата плана</th><th>Договор</th><th>Тип</th><th>Этап</th><th class="num">План. сумма</th>
+    <th class="num">Факт. сумма</th><th>Факт. дата</th><th>Статус</th><th class="num">Просрочка</th><th>Риск</th><th></th></tr></thead>
+  <tbody>
+  {% for p in items %}
+    <tr>
+      <td>{{ p.plan_date | dt }}</td>
+      <td>{{ p.contract.number if p.contract }}</td>
+      <td>{{ p.kind }}</td>
+      <td>{{ p.stage_type }} {{ p.stage_label }}</td>
+      <td class="num">{{ p.plan_sum | money }}</td>
+      <td class="num">{{ p.fact_sum | money }}</td>
+      <td>{{ p.fact_date | dt }}</td>
+      <td>{{ p.status }}</td>
+      <td class="num {{ 'red' if p.overdue_days > 5 else ('yellow' if p.overdue_days else '') }}">{{ p.overdue_days }}</td>
+      <td>{{ m.risk_badge(p.risk) }}</td>
+      <td>
+        {% if access_level(user, 'payments') == 'edit' %}
+          <a class="btn btn-sm" data-modal="/payments/{{ p.id }}/edit">✏️</a>
+          {% if p.status == 'Ожидание' %}
+          <form method="post" action="/payments/{{ p.id }}/status" style="display:inline">
+            <input type="hidden" name="status" value="Оплачено">
+            <button class="btn btn-sm btn-primary">✅ Оплачено</button>
+          </form>
+          {% endif %}
+        {% endif %}
+        {% if user.role == 'Администратор' %}
+        <form method="post" action="/payments/{{ p.id }}/delete" style="display:inline"
+              onsubmit="return confirm('Удалить оплату?')">
+          <button class="btn btn-sm btn-danger">🗑️</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="11" class="muted">Нет оплат по фильтру</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ m.pager('/payments', page, pages, 'contract_id=' ~ f_contract_id ~ '&status=' ~ f_status ~ '&kind=' ~ f_kind ~ '&q=' ~ f_q) }}
+<div class="footer-sums">
+  <span>Входящие: <b>₽ {{ in_sum | money }}</b></span>
+  <span>Исходящие: <b>₽ {{ out_sum | money }}</b></span>
+  <span>Баланс: <b>₽ {{ (in_sum - out_sum) | money }}</b></span>
+</div>
+{% endblock %}

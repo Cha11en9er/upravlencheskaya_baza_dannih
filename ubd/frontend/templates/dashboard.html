@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Главная — УБД{% endblock %}
+{% block content %}
+<h1>Здравствуйте, {{ user.full_name or user.email }}!</h1>
+<div class="kpi-row">
+  <div class="kpi-card"><div class="kpi-num">{{ kpi.projects }}</div><div class="kpi-label">Проектов</div></div>
+  <div class="kpi-card"><div class="kpi-num">₽ {{ kpi.contracts_sum | money }}</div><div class="kpi-label">Сумма договоров</div></div>
+  <div class="kpi-card"><div class="kpi-num">₽ {{ kpi.paid_sum | money }}</div><div class="kpi-label">Оплачено</div></div>
+  <div class="kpi-card kpi-red"><div class="kpi-num">{{ kpi.risks }}</div><div class="kpi-label">Красных рисков</div></div>
+</div>
+<div class="tiles">
+  {% for t in tiles %}
+    {% if t.implemented %}
+      {% if t.level != 'none' %}
+        {% set links = {'budget': '/budget', 'contracts': '/contracts', 'payments': '/payments', 'reports': '/reports'} %}
+        <a class="tile" href="{{ links[t.key] }}">
+          <span class="tile-icon">{{ t.icon }}</span>
+          <span class="tile-label">{{ t.label }}</span>
+        </a>
+      {% else %}
+        <div class="tile tile-locked"><span class="tile-icon">🔒</span><span class="tile-label">{{ t.label }}</span></div>
+      {% endif %}
+    {% else %}
+      <div class="tile tile-locked"><span class="tile-icon">🚧</span><span class="tile-label">{{ t.label }}<br><small>не в МВП</small></span></div>
+    {% endif %}
+  {% endfor %}
+  <a class="tile" href="/contractors"><span class="tile-icon">📇</span><span class="tile-label">Контрагенты<br><small>карточка контрагента</small></span></a>
+  {% if user.role == 'Администратор' %}
+  <a class="tile" href="/admin/users"><span class="tile-icon">⚙️</span><span class="tile-label">Админ-панель</span></a>
+  {% endif %}
+</div>
+{% endblock %}

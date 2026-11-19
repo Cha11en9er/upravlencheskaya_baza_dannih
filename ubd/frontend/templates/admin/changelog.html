@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Админ — Журнал изменений — УБД{% endblock %}
+{% block crumbs %}Админ-панель → Журнал изменений{% endblock %}
+{% block content %}
+<h1>Журнал изменений <span class="muted">({{ total }} записей)</span></h1>
+<table class="data">
+  <thead><tr><th>Когда</th><th>Пользователь</th><th>Сущность</th><th>ID</th><th>Действие</th><th>Детали</th></tr></thead>
+  <tbody>
+  {% for e in items %}
+    <tr>
+      <td>{{ e.at.strftime('%d.%m.%Y %H:%M') if e.at }}</td>
+      <td>{{ e.user_email }}</td>
+      <td>{{ e.entity }}</td>
+      <td>{{ e.entity_id or '' }}</td>
+      <td>{{ e.action }}</td>
+      <td class="small">{{ e.details }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="muted">Журнал пуст</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ m.pager('/admin/changelog', page, pages) }}
+{% endblock %}

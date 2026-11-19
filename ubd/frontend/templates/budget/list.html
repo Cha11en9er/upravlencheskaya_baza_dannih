@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Бюджет — УБД{% endblock %}
+{% block crumbs %}Бюджет и ГрП{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1 style="margin:0">Бюджет и ГрП</h1>
+  <div class="spacer"></div>
+  {% if access_level(user, 'budget') == 'edit' %}
+    <a class="btn btn-primary" data-modal="/budget/new">➕ Добавить строку</a>
+  {% endif %}
+  <a class="btn" href="/budget/export.xlsx">📥 Экспорт XLSX</a>
+</div>
+
+<form class="filters" method="get" action="/budget">
+  <label>Проект
+    <select name="project_id">
+      <option value="0">Все</option>
+      {% for p in projects %}<option value="{{ p.id }}" {{ 'selected' if f_project_id == p.id }}>{{ p.code }} — {{ p.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Объект
+    <select name="object_id">
+      <option value="0">Все</option>
+      {% for o in objects %}<option value="{{ o.id }}" {{ 'selected' if f_object_id == o.id }}>{{ o.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Статья
+    <select name="article">
+      <option value="">Все</option>
+      {% for a in articles %}<option value="{{ a }}" {{ 'selected' if f_article == a }}>{{ a }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Раздел РД
+    <select name="rd">
+      <option value="">Все</option>
+      {% for r in rd_sections %}<option value="{{ r }}" {{ 'selected' if f_rd == r }}>{{ r }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="f-check" style="margin:0">
+    <input type="checkbox" name="annulled" value="1" {{ 'checked' if f_annulled }}> показывать аннулированные
+  </label>
+  <button class="btn btn-primary" type="submit">Показать</button>
+</form>
+
+<table class="data">
+  <thead><tr>
+    <th>Проект</th><th>Объект</th><th>РД</th><th>Статья</th><th>Наименование работ</th><th>Ед.</th>
+    <th class="num">Кол-во план</th><th class="num">Цена план</th><th class="num">Сумма план</th>
+    <th class="num">Кол-во факт</th><th class="num">Цена факт</th><th class="num">Сумма факт</th>
+    <th class="num">Отклонение</th><th class="num">%</th><th>Риск</th><th>Статус</th><th></th>
+  </tr></thead>
+  <tbody>
+  {% for b in items %}
+    <tr>
+      <td>{{ b.project_id or '' }}</td>
+      <td>{{ b.object_id or '' }}</td>
+      <td>{{ b.rd_section }}</td>
+      <td>{{ b.article }}</td>
+      <td>{{ b.work_name }}</td>
+      <td>{{ b.unit }}</td>
+      <td class="num">{{ b.qty_plan }}</td>
+      <td class="num">{{ b.price_plan | money }}</td>
+      <td class="num">{{ b.sum_plan | money }}</td>
+      <td class="num">{{ b.qty_fact }}</td>
+      <td class="num">{{ b.price_fact | money }}</td>
+      <td class="num">{{ b.sum_fact | money }}</td>
+      <td class="num">{{ b.deviation | money }}</td>
+      <td class="num">{{ b.deviation_pct }}</td>
+      <td>{{ m.risk_badge(b.risk) }}</td>
+      <td>{{ b.status }}</td>
+      <td>
+        {% if access_level(user, 'budget') == 'edit' %}
+          <a class="btn btn-sm" data-modal="/budget/{{ b.id }}/edit">✏️</a>
+          {% if b.status == 'Действует' %}
+          <form method="post" action="/budget/{{ b.id }}/status" style="display:inline">
+            <input type="hidden" name="status" value="Аннулирован">
+            <button class="btn btn-sm btn-danger">🚫</button>
+          </form>
+          {% endif %}
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="17" class="muted">Нет строк бюджета по фильтру</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ m.pager('/budget', page, pages, 'project_id=' ~ f_project_id ~ '&article=' ~ f_article ~ '&rd=' ~ f_rd ~ '&annulled=' ~ f_annulled) }}
+{% endblock %}

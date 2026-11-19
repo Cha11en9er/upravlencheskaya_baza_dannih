@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Админ — Пользователи — УБД{% endblock %}
+{% block crumbs %}Админ-панель → Пользователи{% endblock %}
+{% block content %}
+<h1>Пользователи и права</h1>
+<table class="data">
+  <thead><tr><th>Email</th><th>ФИО</th><th>Роль</th><th>Активен</th>
+    {% for key, (label, impl) in blocks.items() %}<th class="small">{{ label.split(' ')[0] }}</th>{% endfor %}
+    <th></th></tr></thead>
+  <tbody>
+  {% for u in users %}
+    <tr>
+      <td>{{ u.email }}</td><td>{{ u.full_name }}</td><td>{{ u.role }}</td>
+      <td>{{ '✅' if u.is_active else '❌' }}</td>
+      {% for key, (label, impl) in blocks.items() %}
+        <td class="small" title="{{ label }}">{{ {'edit': '✏️', 'read': '📖', 'none': '🔒'}[access_level(u, key)] }}</td>
+      {% endfor %}
+      <td>
+        <a class="btn btn-sm" href="/admin/users/{{ u.id }}/edit">✏️</a>
+        {% if u.id != user.id %}
+        <form method="post" action="/admin/users/{{ u.id }}/delete" style="display:inline"
+              onsubmit="return confirm('Удалить пользователя {{ u.email }}?')">
+          <button class="btn btn-sm btn-danger">🗑️</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>{{ 'Редактирование: ' ~ edit_user.email if edit_user else 'Новый пользователь' }}</h2>
+<form method="post" action="{{ '/admin/users/' ~ edit_user.id ~ '/edit' if edit_user else '/admin/users/new' }}" style="max-width:760px">
+  <div class="form-grid">
+    {{ m.field('Email', 'email', edit_user.email if edit_user else '', type='email', required=True) }}
+    {{ m.field('ФИО', 'full_name', edit_user.full_name if edit_user else '') }}
+    <label class="f-field">
+      <span class="f-label">Роль</span>
+      <select name="role">
+        {% for r in roles %}<option value="{{ r }}" {{ 'selected' if edit_user and edit_user.role == r }}>{{ r }}</option>{% endfor %}
+      </select>
+    </label>
+    {{ m.field('Пароль ' + ('(оставить пустым — не менять)' if edit_user else ''), 'password', '', type='password') }}
+  </div>
+  {{ m.checkbox('Активен', 'is_active', edit_user.is_active if edit_user else True) }}
+  {{ m.checkbox('Сбросить права по роли', 'reset_access') }}
+  <h2>Уровни доступа к блокам</h2>
+  <div class="form-grid">
+    {% for key, (label, impl) in blocks.items() %}
+    <label class="f-field">
+      <span class="f-label">{{ label }} {{ '' if impl else '(МВП не реализован)' }}</span>
+      <select name="access_{{ key }}">
+        <option value="edit" {{ 'selected' if edit_user and access_level(edit_user, key) == 'edit' }}>Редактировать</option>
+        <option value="read" {{ 'selected' if edit_user and access_level(edit_user, key) == 'read' }}>Только чтение</option>
+        <option value="none" {{ 'selected' if edit_user and access_level(edit_user, key) == 'none' or not edit_user }}>Не доступен</option>
+      </select>
+    </label>
+    {% endfor %}
+  </div>
+  <button type="submit" class="btn btn-primary">💾 Сохранить</button>
+</form>
+{% endblock %}

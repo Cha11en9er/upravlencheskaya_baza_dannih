@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Контрагенты — УБД{% endblock %}
+{% block crumbs %}Договоры и Оплаты → Карточка контрагента{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1 style="margin:0">Контрагенты <span class="muted">({{ total }})</span></h1>
+  <div class="spacer"></div>
+  {% if access_level(user, 'contracts') == 'edit' %}
+    <a class="btn" data-modal="/contractors/import">📤 Импорт из Excel</a>
+    <a class="btn btn-primary" data-modal="/contractors/new">➕ Добавить контрагента</a>
+  {% endif %}
+  <a class="btn" href="/contractors/export.xlsx">📥 Экспорт XLSX</a>
+</div>
+
+<form class="filters" method="get" action="/contractors">
+  <label>Поиск (название / ИНН / директор / email)
+    <input type="text" name="q" value="{{ f_q }}" size="34">
+  </label>
+  <label>Тип
+    <select name="ctype">
+      <option value="">Все</option>
+      {% for t in contractor_types %}<option value="{{ t }}" {{ 'selected' if f_ctype == t }}>{{ t }}</option>{% endfor %}
+    </select>
+  </label>
+  <button class="btn btn-primary" type="submit">Показать</button>
+</form>
+
+<table class="data">
+  <thead><tr><th>Тип</th><th>Наименование</th><th>ИНН</th><th>Город</th><th>Ген. директор</th>
+    <th>Телефон</th><th>Email</th><th>Статус СБ</th><th class="num">Оборот 2025</th><th>Источник</th><th></th></tr></thead>
+  <tbody>
+  {% for c in items %}
+    <tr>
+      <td>{{ c.contract_type }}</td>
+      <td><b>{{ c.name }}</b></td>
+      <td>{{ c.inn }}</td>
+      <td>{{ c.city }}</td>
+      <td>{{ c.director }}</td>
+      <td class="small">{{ c.phone }}</td>
+      <td class="small">{{ c.email }}</td>
+      <td>{{ c.sb_status }}</td>
+      <td class="num">{{ c.revenue_2025 | money if c.revenue_2025 }}</td>
+      <td>{{ c.source }}</td>
+      <td>
+        {% if access_level(user, 'contracts') == 'edit' %}
+          <a class="btn btn-sm" data-modal="/contractors/{{ c.id }}/edit">✏️</a>
+        {% endif %}
+        {% if user.role == 'Администратор' %}
+        <form method="post" action="/contractors/{{ c.id }}/delete" style="display:inline"
+              onsubmit="return confirm('Удалить контрагента {{ c.name }}?')">
+          <button class="btn btn-sm btn-danger">🗑️</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="11" class="muted">Контрагентов нет. Загрузите выгрузку через «Импорт из Excel».</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ m.pager('/contractors', page, pages, 'q=' ~ f_q ~ '&ctype=' ~ f_ctype) }}
+{% endblock %}

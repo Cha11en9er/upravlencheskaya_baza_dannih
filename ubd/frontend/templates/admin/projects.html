@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Админ — Проекты — УБД{% endblock %}
+{% block crumbs %}Админ-панель → Проекты{% endblock %}
+{% block content %}
+<h1>Проекты и объекты</h1>
+<form method="post" action="/admin/projects/new" class="filters">
+  <label>Код <input name="code" required placeholder="P-003"></label>
+  <label>Название <input name="name" required placeholder="ЖК …"></label>
+  <button class="btn btn-primary">➕ Добавить проект</button>
+</form>
+
+{% for p in projects %}
+<div style="background:#fff;border-radius:8px;padding:14px 18px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+  <div class="toolbar" style="margin-bottom:6px">
+    <h2 style="margin:0">{{ p.code }} — {{ p.name }}</h2>
+    <span class="muted">{{ p.status }}</span>
+    <form method="post" action="/admin/projects/{{ p.id }}/status" style="display:inline">
+      <input type="hidden" name="status" value="{{ 'Закрыт' if p.status == 'Действует' else 'Действует' }}">
+      <button class="btn btn-sm">{{ 'Закрыть' if p.status == 'Действует' else 'Открыть' }}</button>
+    </form>
+  </div>
+  <table class="data" style="margin-bottom:10px">
+    <thead><tr><th>Объект</th><th>Адрес</th><th></th></tr></thead>
+    <tbody>
+    {% for o in p.objects %}
+      <tr><td>{{ o.name }}</td><td>{{ o.address }}</td>
+        <td><form method="post" action="/admin/objects/{{ o.id }}/delete" style="display:inline"
+              onsubmit="return confirm('Удалить объект?')">
+            <button class="btn btn-sm btn-danger">🗑️</button></form></td></tr>
+    {% else %}
+      <tr><td colspan="3" class="muted">Объектов нет</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <form method="post" action="/admin/projects/{{ p.id }}/objects" class="filters" style="box-shadow:none;padding:0">
+    <label>Название объекта <input name="name" required></label>
+    <label>Адрес <input name="address"></label>
+    <button class="btn">➕ Объект</button>
+  </form>
+</div>
+{% else %}
+<p class="muted">Проектов пока нет.</p>
+{% endfor %}
+{% endblock %}

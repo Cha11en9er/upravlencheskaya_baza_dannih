@@ -1,0 +1,33 @@
+{% set partial = request.query_params.get('partial') == '1' %}
+{% set layout = 'base_partial.html' if partial else 'base.html' %}
+{% extends layout %}
+{% import "_macros.html" as m %}
+{% block title %}{{ 'Карточка контрагента' if contractor else 'Новый контрагент' }} — УБД{% endblock %}
+{% block content %}
+<h1>{{ contractor.name if contractor else 'Новый контрагент' }}</h1>
+<form method="post" action="{{ '/contractors/' ~ contractor.id ~ '/edit' if contractor else '/contractors/new' }}">
+  <div class="form-grid">
+    {{ m.select('Тип', 'contract_type', contractor_types, contractor.contract_type if contractor else 'Прочие', empty='') }}
+    {{ m.field('Наименование', 'name', contractor.name if contractor else '', required=True) }}
+    {{ m.field('ИНН', 'inn', contractor.inn if contractor else '') }}
+    {{ m.field('КПП', 'kpp', contractor.kpp if contractor else '') }}
+    {{ m.field('ОГРН', 'ogrn', contractor.ogrn if contractor else '') }}
+    {{ m.field('БИК', 'bik', contractor.bik if contractor else '') }}
+    {{ m.field('Расч. счёт', 'checking_account', contractor.checking_account if contractor else '') }}
+    {{ m.field('Корр. счёт', 'corr_account', contractor.corr_account if contractor else '') }}
+    {{ m.field('Город', 'city', contractor.city if contractor else '') }}
+    {{ m.select('Статус СБ', 'sb_status', sb_statuses, contractor.sb_status if contractor else '', empty='') }}
+    {{ m.field('Вид работ по РД', 'work_type_rd', contractor.work_type_rd if contractor else '') }}
+    {{ m.field('Телефон', 'phone', contractor.phone if contractor else '') }}
+    {{ m.field('Email', 'email', contractor.email if contractor else '') }}
+    {{ m.field('Генеральный директор', 'director', contractor.director if contractor else '') }}
+    {{ m.field('Юр. адрес', 'legal_address', contractor.legal_address if contractor else '') }}
+    {{ m.field('Физ. адрес', 'physical_address', contractor.physical_address if contractor else '') }}
+  </div>
+  <div class="toolbar">
+    <button type="submit" class="btn btn-primary">💾 Сохранить и обновить</button>
+    <button type="button" class="btn" data-close-modal>Отмена</button>
+    <a class="btn" href="/contractors">К списку</a>
+  </div>
+</form>
+{% endblock %}

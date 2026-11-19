@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}УБД{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="logo">УБД</div>
+    <nav>
+      <a href="/" class="{{ 'active' if request.url.path == '/' }}">🏠 Главная</a>
+      {% set nav_items = [('budget', 'Бюджет и ГрП', '/budget', true),
+                          ('contracts', 'Договоры', '/contracts', true),
+                          ('payments', 'Оплаты', '/payments', true),
+                          ('reports', 'Отчеты', '/reports', true)] %}
+      {% for key, label, url, implemented in nav_items %}
+        {% set lvl = access_level(user, key) %}
+        {% if lvl != 'none' and implemented %}
+          <a href="{{ url }}" class="{{ 'active' if request.url.path.startswith(url) }}">{{ label }}</a>
+        {% endif %}
+      {% endfor %}
+      <a href="/contractors" class="{{ 'active' if request.url.path.startswith('/contractors') }}">Контрагенты</a>
+      <div class="nav-section">Скоро</div>
+      <span class="disabled">Сметы и Выполнение 🚧</span>
+      <span class="disabled">Тендеры и МТО 🚧</span>
+      <span class="disabled">СМР и Графики 🚧</span>
+      <span class="disabled">Качество и Надзор 🚧</span>
+      <span class="disabled">Письма, Задачи 🚧</span>
+      {% if user.role == 'Администратор' %}
+        <div class="nav-section">Администрирование</div>
+        <a href="/admin/projects" class="{{ 'active' if request.url.path.startswith('/admin/projects') }}">Проекты</a>
+        <a href="/admin/users" class="{{ 'active' if request.url.path.startswith('/admin/users') }}">Пользователи</a>
+        <a href="/admin/changelog" class="{{ 'active' if request.url.path.startswith('/admin/changelog') }}">Журнал изменений</a>
+      {% endif %}
+    </nav>
+  </aside>
+  <main>
+    <header class="topbar">
+      <div class="crumbs">{% block crumbs %}{% endblock %}</div>
+      <div class="user-box">
+        <span>{{ user.full_name or user.email }}</span>
+        <span class="role">{{ user.role }}</span>
+        <a href="/logout" class="btn btn-ghost">Выйти</a>
+      </div>
+    </header>
+    {% if msg %}<div class="flash">{{ msg }}</div>{% endif %}
+    {% if err %}<div class="flash flash-err">{{ err }}</div>{% endif %}
+    <section class="content">
+      {% block content %}{% endblock %}
+    </section>
+  </main>
+</div>
+<dialog id="modal" class="modal"><div id="modal-body"></div></dialog>
+<script src="/static/js/app.js"></script>
+</body>
+</html>

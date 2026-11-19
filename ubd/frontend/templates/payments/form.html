@@ -1,0 +1,32 @@
+{% set partial = request.query_params.get('partial') == '1' %}
+{% set layout = 'base_partial.html' if partial else 'base.html' %}
+{% extends layout %}
+{% import "_macros.html" as m %}
+{% block title %}{{ 'Редактирование оплаты' if payment else 'Новая оплата' }} — УБД{% endblock %}
+{% block content %}
+<h1>{{ 'Редактирование оплаты' if payment else 'Новая оплата' }}</h1>
+<form method="post" action="{{ '/payments/' ~ payment.id ~ '/edit' if payment else '/payments/new' }}">
+  <div class="form-grid">
+    {{ m.select('Договор', 'contract_id', contracts, (payment.contract_id if payment else prefill_contract_id) or '', title_key='number') }}
+    {{ m.select('Проект', 'project_id', projects, payment.project_id if payment else '', title_key='code') }}
+    {{ m.select('Объект', 'object_id', objects, payment.object_id if payment else '') }}
+    {{ m.select('Тип', 'kind', kinds, payment.kind if payment else 'Исходящий', empty='') }}
+    {{ m.select('Тип этапа', 'stage_type', stage_types, payment.stage_type if payment else 'Прочее', empty='') }}
+    {{ m.field('Этап №', 'stage_label', payment.stage_label if payment else '', placeholder='1, 2, 3…') }}
+    {{ m.field('План. дата', 'plan_date', payment.plan_date if payment else '', type='date') }}
+    {{ m.field('Факт. дата', 'fact_date', payment.fact_date if payment else '', type='date') }}
+    {{ m.field('План. сумма, ₽', 'plan_sum', payment.plan_sum if payment else 0, type='number', step='1') }}
+    {{ m.field('Факт. сумма, ₽', 'fact_sum', payment.fact_sum if payment else 0, type='number', step='1') }}
+    {{ m.select('Статус', 'status', statuses, payment.status if payment else 'Ожидание', empty='') }}
+  </div>
+  <label class="f-field">
+    <span class="f-label">Примечание</span>
+    <textarea name="note" rows="2">{{ payment.note if payment }}</textarea>
+  </label>
+  <div class="toolbar">
+    <button type="submit" class="btn btn-primary">💾 Сохранить и обновить</button>
+    <button type="button" class="btn" data-close-modal>Отмена</button>
+    <a class="btn" href="/payments">К списку</a>
+  </div>
+</form>
+{% endblock %}

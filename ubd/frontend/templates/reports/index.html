@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Отчеты — УБД{% endblock %}
+{% block crumbs %}Отчеты{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <h1 style="margin:0">Отчеты</h1>
+  <div class="spacer"></div>
+  <a class="btn" href="/reports/export.xlsx?report={{ report }}&project_id={{ f_project_id }}">📥 Экспорт XLSX</a>
+</div>
+
+<form class="filters" method="get" action="/reports">
+  <label>Тип отчета
+    <select name="report">
+      <option value="contracts" {{ 'selected' if report == 'contracts' }}>Сводный по договорам</option>
+      <option value="payments" {{ 'selected' if report == 'payments' }}>Сводный по оплатам</option>
+      <option value="risks" {{ 'selected' if report == 'risks' }}>Реестр рисков</option>
+    </select>
+  </label>
+  <label>Проект
+    <select name="project_id">
+      <option value="0">Все</option>
+      {% for p in projects %}<option value="{{ p.id }}" {{ 'selected' if f_project_id == p.id }}>{{ p.code }} — {{ p.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <button class="btn btn-primary" type="submit">📊 Отобразить</button>
+</form>
+
+{% if report == 'contracts' %}
+  <div class="footer-sums" style="margin-bottom:10px">
+    <span>Сумма договоров: <b>₽ {{ sum_amount | money }}</b></span>
+    <span>Оплачено: <b>₽ {{ sum_paid | money }}</b></span>
+    <span>Остаток: <b>₽ {{ sum_rest | money }}</b></span>
+  </div>
+  <table class="data">
+    <thead><tr><th>Тип</th><th>№ договора</th><th>Дата</th><th>Контрагент</th><th>Предмет</th>
+      <th class="num">Сумма</th><th class="num">Оплачено</th><th class="num">Остаток</th>
+      <th class="num">Просрочка</th><th class="num">Пени</th><th>Риск</th><th>Статус</th></tr></thead>
+    <tbody>
+    {% for c in items %}
+      <tr>
+        <td>{{ c.contract_type }}</td><td><a href="/contracts/{{ c.id }}">{{ c.number }}</a></td>
+        <td>{{ c.date | dt }}</td><td>{{ c.contractor.name if c.contractor }}</td><td>{{ c.subject }}</td>
+        <td class="num">{{ c.amount | money }}</td><td class="num">{{ c.paid | money }}</td>
+        <td class="num">{{ c.rest | money }}</td>
+        <td class="num">{{ c.overdue_days }}</td><td class="num">{{ c.penalty | money }}</td>
+        <td>{{ m.risk_badge(c.risk) }}</td><td>{{ c.status }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="12" class="muted">Нет данных</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% elif report == 'payments' %}
+  <div class="footer-sums" style="margin-bottom:10px">
+    <span>План: <b>₽ {{ total_plan | money }}</b></span>
+    <span>Факт: <b>₽ {{ total_fact | money }}</b></span>
+  </div>
+  <table class="data">
+    <thead><tr><th>Договор</th><th>Тип</th><th>Этап</th><th>План. дата</th><th>Факт. дата</th>
+      <th class="num">План. сумма</th><th class="num">Факт. сумма</th><th>Статус</th><th class="num">Просрочка</th></tr></thead>
+    <tbody>
+    {% for p in items %}
+      <tr>
+        <td>{{ p.contract.number if p.contract }}</td><td>{{ p.kind }}</td>
+        <td>{{ p.stage_type }} {{ p.stage_label }}</td>
+        <td>{{ p.plan_date | dt }}</td><td>{{ p.fact_date | dt }}</td>
+        <td class="num">{{ p.plan_sum | money }}</td><td class="num">{{ p.fact_sum | money }}</td>
+        <td>{{ p.status }}</td><td class="num">{{ p.overdue_days }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="9" class="muted">Нет данных</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <h2>Красные договоры</h2>
+  <table class="data">
+    <thead><tr><th>№ договора</th><th>Контрагент</th><th class="num">Сумма</th><th class="num">Просрочка</th><th class="num">Пени</th></tr></thead>
+    <tbody>
+    {% for c in contracts %}
+      <tr class="red"><td><a href="/contracts/{{ c.id }}">{{ c.number }}</a></td>
+        <td>{{ c.contractor.name if c.contractor }}</td>
+        <td class="num">{{ c.amount | money }}</td><td class="num">{{ c.overdue_days }}</td>
+        <td class="num">{{ c.penalty | money }}</td></tr>
+    {% else %}
+      <tr><td colspan="5" class="muted">Красных договоров нет 🎉</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <h2>Просроченные оплаты</h2>
+  <table class="data">
+    <thead><tr><th>Договор</th><th>Этап</th><th>План. дата</th><th class="num">План. сумма</th><th class="num">Просрочка</th></tr></thead>
+    <tbody>
+    {% for p in payments %}
+      <tr class="red"><td>{{ p.contract.number if p.contract }}</td>
+        <td>{{ p.stage_type }} {{ p.stage_label }}</td>
+        <td>{{ p.plan_date | dt }}</td><td class="num">{{ p.plan_sum | money }}</td>
+        <td class="num">{{ p.overdue_days }}</td></tr>
+    {% else %}
+      <tr><td colspan="5" class="muted">Просроченных оплат нет 🎉</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+{% endblock %}

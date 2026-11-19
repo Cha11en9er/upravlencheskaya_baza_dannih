@@ -1,0 +1,37 @@
+{% set partial = request.query_params.get('partial') == '1' %}
+{% set layout = 'base_partial.html' if partial else 'base.html' %}
+{% extends layout %}
+{% import "_macros.html" as m %}
+{% block title %}{{ 'Редактирование строки бюджета' if item else 'Новая строка бюджета' }} — УБД{% endblock %}
+{% block content %}
+<h1>{{ 'Редактирование строки бюджета' if item else 'Новая строка бюджета' }}</h1>
+<form method="post" action="{{ '/budget/' ~ item.id ~ '/edit' if item else '/budget/new' }}">
+  <div class="form-grid">
+    {{ m.select('Проект', 'project_id', projects, item.project_id if item else '', title_key='code') }}
+    {{ m.select('Объект', 'object_id', objects, item.object_id if item else '') }}
+    {{ m.select('Раздел РД', 'rd_section', rd_sections, item.rd_section if item else '', empty='') }}
+    {{ m.select('Статья', 'article', articles, item.article if item else 'СМР', empty='') }}
+    {{ m.select('Ед. изм.', 'unit', units, item.unit if item else 'шт', empty='') }}
+    {{ m.field('Наименование работ', 'work_name', item.work_name if item else '', required=True) }}
+    {{ m.field('Кол-во план', 'qty_plan', item.qty_plan if item else 0, type='number', step='0.01') }}
+    {{ m.field('Цена план, ₽', 'price_plan', item.price_plan if item else 0, type='number', step='1') }}
+    {{ m.field('Кол-во факт', 'qty_fact', item.qty_fact if item else 0, type='number', step='0.01') }}
+    {{ m.field('Цена факт, ₽', 'price_fact', item.price_fact if item else 0, type='number', step='1') }}
+    {{ m.field('Дата тендера начало', 'tender_date_start', item.tender_date_start if item else '', type='date') }}
+    {{ m.field('Дата тендера конец', 'tender_date_end', item.tender_date_end if item else '', type='date') }}
+    {{ m.field('Дата работ начало', 'work_date_start', item.work_date_start if item else '', type='date') }}
+    {{ m.field('Дата работ конец', 'work_date_end', item.work_date_end if item else '', type='date') }}
+    {{ m.field('Дата ввода объекта', 'commissioning_date', item.commissioning_date if item else '', type='date') }}
+  </div>
+  <label class="f-field">
+    <span class="f-label">Примечание</span>
+    <textarea name="note" rows="2">{{ item.note if item }}</textarea>
+  </label>
+  <p class="muted">Суммы, отклонение, % и риск считаются автоматически. Дата подписания договора = конец тендера + 14 к.д.</p>
+  <div class="toolbar">
+    <button type="submit" class="btn btn-primary">💾 Сохранить и обновить</button>
+    <button type="button" class="btn" data-close-modal>Отмена</button>
+    <a class="btn" href="/budget">К списку</a>
+  </div>
+</form>
+{% endblock %}
