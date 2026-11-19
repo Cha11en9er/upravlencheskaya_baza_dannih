@@ -28,6 +28,12 @@ EXPORT_XLSX = REPO_ROOT / "export" / "девелоперы_генподрядч�
 def seed_admin(db) -> bool:
     if db.execute(select(func.count(User.id))).scalar():
         return False
+    # Простой вход для МВП (временно; сменить до реального многопользовательского
+    # использования — см. DECISIONS.md).
+    db.add(User(email="админ", full_name="Администратор (простой вход)",
+                password_hash=hash_password("1"),
+                role="Администратор", is_active=True,
+                block_access=default_access_for_role("Администратор")))
     db.add(User(email=settings.admin_email.lower(), full_name="Администратор",
                 password_hash=hash_password(settings.admin_password),
                 role="Администратор", is_active=True,

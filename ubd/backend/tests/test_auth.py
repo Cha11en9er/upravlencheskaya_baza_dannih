@@ -16,6 +16,18 @@ def test_login_wrong_credentials(client):
     assert "Неверный email или пароль" in resp.text
 
 
+def test_simple_admin_login(client):
+    """Простой вход «админ / 1» (МВП, см. DECISIONS.md)."""
+    resp = client.post("/login", data={"email": "админ", "password": "1"},
+                       follow_redirects=False)
+    assert resp.status_code == 303
+    assert resp.headers["location"] == "/"
+    # неверный пароль не пускает
+    resp2 = client.post("/login", data={"email": "админ", "password": "2"},
+                        follow_redirects=False)
+    assert resp2.headers["location"] == "/login?error=1"
+
+
 def test_login_admin_and_dashboard(admin_client):
     resp = admin_client.get("/")
     assert resp.status_code == 200
