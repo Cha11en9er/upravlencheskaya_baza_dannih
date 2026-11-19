@@ -1,6 +1,10 @@
 """Общая обвязка тестов: изолированная SQLite-база на время тестового прогона.
 
-Важно: у каждого клиента своя cookie-кува (logout в одном тесте не ломает другие).
+Важно:
+- каждый клиент входит в `with TestClient(app)` — только так гарантированно
+  выполняется startup (create_all + авто-сид), в новых starlette/httpx2
+  TestClient без `with` startup НЕ запускает;
+- у каждого клиента своя cookie-кува (logout в одном тесте не ломает другие).
 """
 from __future__ import annotations
 
@@ -19,13 +23,6 @@ from fastapi.testclient import TestClient  # noqa: E402
 from app.main import app  # noqa: E402
 
 
-def _logged_in(email: str, password: str) -> TestClient:
-    c = TestClient(app)  # startup идемпотентен: create_all + сид при пустой базе
-    resp = c.post("/login", data={"email": email, "password": password}, follow_redirects=False)
-    assert resp.status_code == 303, f"логин {email} должен пройти"
-    return c
-
-
 @pytest.fixture(scope="session")
 def client():
     with TestClient(app) as c:
@@ -34,13 +31,17 @@ def client():
 
 @pytest.fixture(scope="session")
 def admin_client():
-    c = _logged_in("admin@ubd.local", "admin123")
-    yield c
-    c.close()
+    with TestClient(app) as c:
+        resp = c.post("/login", data={"email": "admin@ubd.local", "password": "admin123"},
+                      follow_redirects=False)
+        assert resp.status_code == 303, "логин админа должен пройти"
+        yield c
 
 
 @pytest.fixture(scope="session")
 def fin_client():
-    c = _logged_in("fin@ubd.local", "user123")
-    yield c
-    c.close()
+    with TestClient(app) as c:
+        resp = c.post("/login", data={"email": "fin@ubd.local", "password": "user123"},
+                      follow_redirects=False)
+        assert resp.status_code == 303, "логин финансиста должен пройти"
+        yield c
