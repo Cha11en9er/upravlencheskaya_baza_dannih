@@ -14,6 +14,9 @@ from pathlib import Path
 
 _TMP_DB = (Path(tempfile.gettempdir()) / "ubd_test.db").as_posix()
 os.environ["UBD_DB_URL"] = f"sqlite:///{_TMP_DB}"
+# тестовые креды — независимо от .env (на сервере пароль админа другой)
+os.environ["UBD_ADMIN_EMAIL"] = "admin@ubd.local"
+os.environ["UBD_ADMIN_PASSWORD"] = "admin123"
 if os.path.exists(_TMP_DB):
     os.remove(_TMP_DB)
 
